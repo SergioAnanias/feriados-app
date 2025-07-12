@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuenta Regresiva - Próximo Día Hábil Chile</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .countdown {
+            font-size: 4em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 4px;
+        }
+        
+        .info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+        
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ffcccc;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .success {
+            background: rgba(0, 255, 0, 0.2);
+            color: #ccffcc;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .current-date {
+            font-size: 1.2em;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .next-holiday {
+            font-size: 1.1em;
+            margin: 10px 0;
+            color: #FFD700;
+            font-weight: bold;
+        }
+        
+        .holiday-name {
+            font-size: 1.3em;
+            margin: 10px 0;
+            color: #FF6B6B;
+            font-weight: bold;
+        }
+        
+        .api-info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 0.9em;
+            color: #cccccc;
+        }
+        
+        .holidays-list {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .holiday-item {
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Cuenta Regresiva al Próximo Feriado</h1>
+        
+        <div class="api-info">
+            <strong>API Gratuita:</strong> Usando Nager.Date API - Sin costo, sin registro requerido
+        </div>
+        
+        <button onclick="initializeCountdown()" id="startBtn">🎊 Iniciar Cuenta Regresiva</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Consultando próximos feriados chilenos...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+        
+        <div class="info" id="info" style="display: none;">
+            <div class="current-date" id="currentDate"></div>
+            <div class="next-holiday" id="nextHoliday"></div>
+            <div class="holiday-name" id="holidayName"></div>
+        </div>
+        
+        <div class="countdown" id="countdown">--:--:--</div>
+        
+        <div class="holidays-list" id="holidaysList">
+            <h3>Todos los Feriados 2025-2026:</h3>
+            <div id="holidaysContent"></div>
+        </div>
+        
+        <button onclick="refreshCountdown()" id="refreshBtn" style="display: none;">🔄 Actualizar</button>
+        <button onclick="toggleHolidays()" id="showHolidaysBtn" style="display: none;">📅 Ver Feriados</button>
+    </div>
+
+    <script>
+        let countdownInterval;
+        let targetDate;
+        let publicHolidays = [];
+        
+        const countdownDisplay = document.getElementById('countdown');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const success = document.getElementById('success');
+        const info = document.getElementById('info');
+        const currentDateDiv = document.getElementById('currentDate');
+        const nextHolidayDiv = document.getElementById('nextHoliday');
+        const holidayNameDiv = document.getElementById('holidayName');
+        const startBtn = document.getElementById('startBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const showHolidaysBtn = document.getElementById('showHolidaysBtn');
+        const holidaysList = document.getElementById('holidaysList');
+        const holidaysContent = document.getElementById('holidaysContent');
+        
+        function formatTime(seconds) {
+            const days = Math.floor(seconds / (24 * 3600));
+            const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (days > 0) {
+                return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            success.style.display = 'none';
+            loading.style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            success.textContent = message;
+            success.style.display = 'block';
+            error.style.display = 'none';
+            loading.style.display = 'none';
+        }
+        
+        function showLoading() {
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            success.style.display = 'none';
+        }
+        
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+        
+        function createLocalDate(dateString) {
+            // Create date in local timezone to avoid timezone conversion issues
+            const [year, month, day] = dateString.split('-');
+            return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        }
+        
+        function formatDateForDisplay(date) {
+            return date.toLocaleDateString('es-CL', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+        
+        function isWeekend(date) {
+            const day = date.getDay();
+            return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+        }
+        
+        function isPublicHoliday(date) {
+            const dateString = formatDate(date);
+            return publicHolidays.some(holiday => holiday.date === dateString);
+        }
+        
+        function isWorkingDay(date) {
+            return !isWeekend(date) && !isPublicHoliday(date);
+        }
+        
+        function findNextHoliday(startDate) {
+            const now = new Date(startDate);
+            
+            // Find the next holiday that's after today
+            const nextHoliday = publicHolidays.find(holiday => {
+                const holidayDate = createLocalDate(holiday.date);
+                return holidayDate > now;
+            });
+            
+            if (!nextHoliday) {
+                throw new Error('No se encontraron feriados próximos');
+            }
+            
+            return {
+                date: createLocalDate(nextHoliday.date),
+                name: nextHoliday.localName,
+                holiday: nextHoliday
+            };
+        }
+        
+        async function fetchPublicHolidays() {
+            const currentYear = new Date().getFullYear();
+            const nextYear = currentYear + 1;
+            
+            try {
+                // Obtener feriados del año actual y siguiente
+                const [currentYearResponse, nextYearResponse] = await Promise.all([
+                    fetch(`https://date.nager.at/api/v3/PublicHolidays/${currentYear}/CL`),
+                    fetch(`https://date.nager.at/api/v3/PublicHolidays/${nextYear}/CL`)
+                ]);
+                
+                if (!currentYearResponse.ok || !nextYearResponse.ok) {
+                    throw new Error('Error al consultar la API de feriados');
+                }
+                
+                const currentYearHolidays = await currentYearResponse.json();
+                const nextYearHolidays = await nextYearResponse.json();
+                
+                return [...currentYearHolidays, ...nextYearHolidays];
+                
+            } catch (err) {
+                throw new Error(`Error al obtener feriados: ${err.message}`);
+            }
+        }
+        
+        function displayAllHolidays() {
+            const now = new Date();
+            
+            // Separate past and future holidays
+            const pastHolidays = publicHolidays
+                .filter(holiday => createLocalDate(holiday.date) < now)
+                .slice(-3); // Last 3 past holidays
+            
+            const futureHolidays = publicHolidays
+                .filter(holiday => createLocalDate(holiday.date) >= now)
+                .slice(0, 10); // Next 10 future holidays
+            
+            holidaysContent.innerHTML = '';
+            
+            // Add future holidays
+            if (futureHolidays.length > 0) {
+                const futureTitle = document.createElement('h4');
+                futureTitle.textContent = 'Próximos Feriados:';
+                futureTitle.style.color = '#FFD700';
+                futureTitle.style.marginTop = '0';
+                holidaysContent.appendChild(futureTitle);
+                
+                futureHolidays.forEach((holiday, index) => {
+                    const holidayDate = createLocalDate(holiday.date);
+                    const div = document.createElement('div');
+                    div.className = 'holiday-item';
+                    if (index === 0) {
+                        div.style.background = 'rgba(255, 215, 0, 0.2)'; // Highlight next holiday
+                        div.style.border = '2px solid #FFD700';
+                    }
+                    div.innerHTML = `
+                        <strong>${formatDateForDisplay(holidayDate)}</strong><br>
+                        ${holiday.localName}
+                        ${index === 0 ? ' 🎯' : ''}
+                    `;
+                    holidaysContent.appendChild(div);
+                });
+            }
+            
+            // Add past holidays
+            if (pastHolidays.length > 0) {
+                const pastTitle = document.createElement('h4');
+                pastTitle.textContent = 'Feriados Recientes:';
+                pastTitle.style.color = '#cccccc';
+                pastTitle.style.marginTop = '20px';
+                holidaysContent.appendChild(pastTitle);
+                
+                pastHolidays.forEach(holiday => {
+                    const holidayDate = createLocalDate(holiday.date);
+                    const div = document.createElement('div');
+                    div.className = 'holiday-item';
+                    div.style.opacity = '0.6';
+                    div.innerHTML = `
+                        <strong>${formatDateForDisplay(holidayDate)}</strong><br>
+                        ${holiday.localName}
+                    `;
+                    holidaysContent.appendChild(div);
+                });
+            }
+        }
+        
+        function toggleHolidays() {
+            const isVisible = holidaysList.style.display === 'block';
+            holidaysList.style.display = isVisible ? 'none' : 'block';
+            showHolidaysBtn.textContent = isVisible ? '📅 Ver Feriados' : '📅 Ocultar Feriados';
+        }
+        
+        function updateCountdown() {
+            if (!targetDate) return;
+            
+            const now = new Date();
+            const timeDiff = targetDate.getTime() - now.getTime();
+            
+            if (timeDiff <= 0) {
+                countdownDisplay.textContent = "¡Es feriado! 🎉";
+                clearInterval(countdownInterval);
+                showSuccess('¡Hoy es feriado! Puedes actualizar para ver el próximo.');
+                refreshBtn.style.display = 'inline-block';
+                return;
+            }
+            
+            const totalSeconds = Math.floor(timeDiff / 1000);
+            countdownDisplay.textContent = formatTime(totalSeconds);
+        }
+        
+        function startCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+        
+        async function initializeCountdown() {
+            try {
+                showLoading();
+                startBtn.disabled = true;
+                
+                // Obtener feriados públicos
+                publicHolidays = await fetchPublicHolidays();
+                
+                // Sort holidays by date
+                publicHolidays.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                const now = new Date();
+                const nextHoliday = findNextHoliday(now);
+                
+                // Configurar la fecha objetivo (inicio del próximo feriado)
+                targetDate = new Date(nextHoliday.date);
+                targetDate.setHours(0, 0, 0, 0);
+                
+                // Mostrar información
+                currentDateDiv.textContent = `Hoy: ${formatDateForDisplay(now)}`;
+                nextHolidayDiv.textContent = `Próximo feriado: ${formatDateForDisplay(nextHoliday.date)}`;
+                holidayNameDiv.textContent = `🎉 ${nextHoliday.name}`;
+                
+                // Mostrar todos los feriados
+                displayAllHolidays();
+                
+                info.style.display = 'block';
+                refreshBtn.style.display = 'inline-block';
+                showHolidaysBtn.style.display = 'inline-block';
+                
+                showSuccess(`¡Cuenta regresiva iniciada! Próximo feriado: ${nextHoliday.name}`);
+                
+                // Iniciar countdown
+                startCountdown();
+                
+            } catch (err) {
+                showError(`Error: ${err.message}`);
+                console.error('Error completo:', err);
+            } finally {
+                startBtn.disabled = false;
+            }
+        }
+        
+        function refreshCountdown() {
+            initializeCountdown();
+        }
+        
+        // Inicializar automáticamente al cargar la página
+        window.addEventListener('load', function() {
+            initializeCountdown();
+        });
+        
+        // Limpiar interval al salir
+        window.addEventListener('beforeunload', function() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        });
+    </script>
+</body>
+</html>
