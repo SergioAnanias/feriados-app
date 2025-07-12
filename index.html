@@ -204,7 +204,6 @@
         const currentDateDiv = document.getElementById('currentDate');
         const nextHolidayDiv = document.getElementById('nextHoliday');
         const holidayNameDiv = document.getElementById('holidayName');
-        const startBtn = document.getElementById('startBtn');
         const refreshBtn = document.getElementById('refreshBtn');
         const showHolidaysBtn = document.getElementById('showHolidaysBtn');
         const holidaysList = document.getElementById('holidaysList');
@@ -417,7 +416,6 @@
         async function initializeCountdown() {
             try {
                 showLoading();
-                startBtn.disabled = true;
                 
                 // Obtener feriados públicos
                 publicHolidays = await fetchPublicHolidays();
